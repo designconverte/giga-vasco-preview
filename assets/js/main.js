@@ -212,11 +212,20 @@
       var submitLabel = submit.textContent;
       submit.disabled = true; submit.textContent = 'Enviando…';
       if (ENDPOINT) {
+        // o e-mail ao time é notificação best-effort; com WhatsApp configurado,
+        // uma falha no endpoint NUNCA bloqueia o lead de seguir a conversa
         fetch(ENDPOINT, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(lead)
-        }).then(function (res) { res.ok ? success() : failure(); }).catch(failure);
+        }).then(function (res) {
+          if (res.ok) { success(); }
+          else if (WHATSAPP) { console.warn('[GIGA] notificação por e-mail falhou (HTTP ' + res.status + '); lead segue via WhatsApp.'); success(); }
+          else { failure(); }
+        }).catch(function () {
+          if (WHATSAPP) { console.warn('[GIGA] endpoint de e-mail inacessível; lead segue via WhatsApp.'); success(); }
+          else { failure(); }
+        });
       } else if (WHATSAPP) {
         // o WhatsApp com automação É o destino real do lead nesta operação
         success();
