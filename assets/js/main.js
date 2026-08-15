@@ -238,9 +238,16 @@
     var btnClose = document.getElementById('cineClose');
     if (!trigger || !modal || !vid) return;
     var FILME = 'assets/video/giga-filme.mp4';
-    // o botão só aparece se o arquivo do filme existir no servidor
+    // com o filme no servidor: o gatilho da prova emocional aparece E o botão
+    // secundário do hero vira a chamada para assistir em tela cheia
     fetch(FILME, { method: 'HEAD' }).then(function (res) {
-      if (res.ok) trigger.hidden = false;
+      if (!res.ok) return;
+      trigger.hidden = false;
+      var heroVer = document.getElementById('heroVer');
+      if (heroVer) {
+        heroVer.textContent = 'Assistir ao filme completo';
+        heroVer.addEventListener('click', function (e) { e.preventDefault(); open(); });
+      }
     }).catch(function () {});
     var lastFocus = null;
     function open() {
