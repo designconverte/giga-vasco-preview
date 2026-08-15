@@ -41,7 +41,16 @@ Cultura e guarda-rails: `docs/vasco-cultura-dossie.md` — **ler antes de editar
 6. **Domínio final:** trocar `https://giga-vasco.motochefebrasil.com.br` (placeholder marcado com comentário) em `canonical`, `og:url`, `og:image` e `twitter:image` no `<head>`.
 7. **Filme completo (opcional):** colocar o vídeo oficial comprimido em `assets/video/giga-filme.mp4`. O botão "Assistir ao filme da edição" (seção Prova Emocional) só aparece quando o arquivo existe (checagem HEAD no load; antes disso o console mostra um 404 esperado desse probe). Entregar o arquivo bruto de 148MB para compressão (~1080p, alvo 25–40MB) antes de subir.
 8. **Preview no GitHub Pages:** ao republicar o preview, reaplicar `noindex` e remover `canonical` na CÓPIA de deploy (ver comentário no HTML do deploy). Na Hostinger, NÃO aplicar noindex: a página final deve indexar.
-7. Especificações (autonomia, recarga, garantia): quando a MotoChefe liberar, a autonomia deve entrar no HERO (recomendação do copy deck).
+   **Não faça isso à mão** — use `_deploy/deploy-preview.ps1`, que limpa o working dir, recopia a fonte (exceto `_deploy/` e `.claude/`), reaplica o patch de preview, roda a auditoria (sintaxe do JS, zero pixels, zero segredos), commita, dá push e confere o resultado no ar. O script **aborta** se qualquer âncora do patch não for encontrada, então não existe preview indexável por acidente:
+   ```powershell
+   .\_deploy\deploy-preview.ps1 -Message "feat: LP v1.4 [preview]" -Prova "TEXTO NOVO DO RELEASE"
+   ```
+   Para o build da Hostinger, `-Producao` pula o patch (mantém `canonical`, sem `noindex`), não usa git e só monta a pasta para upload:
+   ```powershell
+   .\_deploy\deploy-preview.ps1 -Producao -OutDir "D:\entrega\giga-hostinger"
+   ```
+   A pasta `_deploy/` é de ferramental e nunca vai para o repo público de preview.
+9. Especificações (autonomia, recarga, garantia): quando a MotoChefe liberar, a autonomia deve entrar no HERO (recomendação do copy deck).
 
 ## Rodar localmente
 
