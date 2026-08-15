@@ -123,10 +123,12 @@ a{color:inherit;text-decoration:none;}
 .loader__half{position:absolute;inset:-1px;background:var(--preto);will-change:transform;}
 .loader__half--a{clip-path:polygon(0 0,100% 0,100% 100%);}
 .loader__half--b{clip-path:polygon(0 0,100% 100%,0 100%);}
-/* a faixa branca diagonal da camisa (canto superior esquerdo -> inferior direito) */
+/* a faixa branca diagonal (canto inferior esquerdo -> superior direito, como a barra do logo);
+   o brilho acompanha a expansão até tomar a tela */
 .loader__faixa{
   position:absolute;top:50%;left:50%;width:260vmax;height:12vmin;background:var(--branco);
   transform:translate(-50%,-50%) rotate(0deg) scaleX(0);will-change:transform;
+  box-shadow:0 0 60px 12px rgba(255,255,255,.85),0 0 140px 40px rgba(255,255,255,.35);
 }
 .loader__inner{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;}
 .loader__cruz{width:44px;height:44px;}
@@ -362,12 +364,14 @@ a{color:inherit;text-decoration:none;}
   .det__frame{height:min(64svh,680px);width:auto;flex:none;}
   .det__info{max-width:340px;padding-bottom:10px;padding-right:0;}
 }
-/* mobile: mesmo scroll horizontal pinado, painel em coluna (foto em cima, texto embaixo) */
+/* mobile: mesmo scroll horizontal pinado, painel em coluna (foto em cima, texto embaixo);
+   imagem maior para preencher a altura útil (o pin respira 84px do topo, ver main.js) */
 @media (max-width:767px){
   .det__panel{width:auto;flex-direction:column;gap:var(--sp-4);}
-  .det__frame{height:min(48svh,460px);width:auto;flex:none;}
-  .det__info{max-width:min(78vw,360px);}
+  .det__frame{height:min(54svh,520px);width:auto;flex:none;}
+  .det__info{max-width:min(82vw,380px);}
   .det__info p{font-size:15px;}
+  .det__track{padding-bottom:var(--sp-8);}
 }
 .det__frame img{width:100%;height:100%;object-fit:cover;transform:scale(1.06);will-change:transform;}
 .det__info{display:flex;flex-direction:column;gap:8px;padding-right:var(--sp-6);}
@@ -412,9 +416,13 @@ a{color:inherit;text-decoration:none;}
   opacity:0;transition:opacity .6s var(--ease);
 }
 .ben__img.is-active{opacity:1;}
+/* mobile: a imagem PINA no topo enquanto os benefícios sobem e trocam o crossfade,
+   espelhando a experiência do desktop */
 @media (max-width:900px){
-  .ben__grid{grid-template-columns:1fr;}
-  .ben__sticky{position:relative;top:auto;order:-1;}
+  .ben__grid{display:flex;flex-direction:column;}
+  .ben__sticky{position:sticky;top:0;order:-1;z-index:2;}
+  .ben__figure{aspect-ratio:16/10;}
+  .ben__list{position:relative;z-index:1;}
 }
 
 /* ---------- VANTAGENS ---------- */
@@ -483,7 +491,11 @@ a{color:inherit;text-decoration:none;}
 .gal__btn{display:block;width:100%;height:100%;padding:0;border:0;background:none;cursor:pointer;}
 .gal__btn img{width:100%;height:100%;object-fit:cover;transition:transform .7s var(--ease-impacto),filter .5s var(--ease);}
 .gal__item:hover img{transform:scale(1.05);}
-@media (max-width:900px){ .gal__grid{grid-template-columns:1fr 1fr;} .gal__item--wide{grid-column:span 2;} }
+@media (max-width:900px){
+  .gal__grid{grid-template-columns:1fr 1fr;}
+  /* a foto 16:9 abre a galeria no mobile: as verticais se encaixam em pares abaixo */
+  .gal__item--wide{grid-column:span 2;order:-1;}
+}
 
 /* ---------- FAQ ---------- */
 .faq{background:var(--preto);padding-block:var(--sp-28);}

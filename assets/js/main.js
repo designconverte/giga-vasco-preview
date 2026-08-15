@@ -421,14 +421,15 @@
     function reveal() {
       if (revealed) return; revealed = true;
       if (video) { var p = video.play(); if (p && p.catch) p.catch(function () {}); }
-      // a faixa branca corre na diagonal exata da tela (canto sup. esquerdo -> inf. direito),
-      // como a faixa da camisa; depois as duas metades pretas se abrem ao longo dela
+      // a faixa branca corre na diagonal do canto INFERIOR ESQUERDO ao SUPERIOR DIREITO
+      // (como a barra do logo): se desenha, expande até tomar a tela com brilho,
+      // e esmaece num fade suave revelando a página
       var vw = window.innerWidth, vh = window.innerHeight;
       var ang = Math.atan2(vh, vw) * 180 / Math.PI;
       var len = Math.hypot(vw, vh);
-      var ux = vh / len, uy = -vw / len; // perpendicular à diagonal
-      var d = len * 0.85;
-      gsap.set('#loaderFaixa', { rotation: ang });
+      var faixaEl = document.getElementById('loaderFaixa');
+      var cover = Math.ceil((len / Math.max(faixaEl.offsetHeight, 1)) * 1.25);
+      gsap.set(faixaEl, { rotation: -ang });
       var tl = gsap.timeline({
         onComplete: function () {
           el.style.display = 'none';
@@ -437,14 +438,14 @@
         }
       });
       tl.to('.loader__inner', { opacity: 0, y: -30, duration: 0.4, ease: 'power2.in' })
-        // 1. a faixa se desenha na diagonal
-        .to('#loaderFaixa', { scaleX: 1, duration: 0.55, ease: 'expo.inOut' }, '-=0.1')
-        // 2. as metades se abrem ao longo da faixa, revelando a página
-        .to('.loader__half--a', { x: ux * d, y: uy * d, duration: 0.9, ease: 'power4.inOut' }, '+=0.12')
-        .to('.loader__half--b', { x: -ux * d, y: -uy * d, duration: 0.9, ease: 'power4.inOut' }, '<')
-        .to('#loaderFaixa', { scaleY: 3.2, opacity: 0, duration: 0.7, ease: 'power3.in' }, '<0.15')
+        // 1. a faixa se desenha na diagonal (com o brilho do box-shadow do CSS)
+        .to(faixaEl, { scaleX: 1, duration: 0.5, ease: 'expo.inOut' }, '-=0.1')
+        // 2. expande até tomar a tela inteira de branco
+        .to(faixaEl, { scaleY: cover, duration: 0.8, ease: 'power3.inOut' }, '+=0.1')
+        // 3. esmaece com fade suave, revelando a página por trás
+        .to(el, { opacity: 0, duration: 0.9, ease: 'power2.inOut' }, '+=0.05')
         // INTRO DO HERO
-        .fromTo('#heroMedia', { scale: 1.12 }, { scale: 1, duration: 1.6, ease: 'expo.out' }, '-=0.65')
+        .fromTo('#heroMedia', { scale: 1.12 }, { scale: 1, duration: 1.6, ease: 'expo.out' }, '-=0.75')
         .fromTo('.hero__line', { yPercent: 115 }, { yPercent: 0, duration: 1.1, stagger: 0.12, ease: 'power4.out' }, '-=1.35')
         .fromTo('#heroEyebrow', { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }, '-=0.7')
         .fromTo('#heroSub', { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out' }, '-=0.55')
@@ -561,7 +562,9 @@
       x: function () { return -distance(); },
       ease: 'none',
       scrollTrigger: {
-        trigger: viewport, start: 'top top',
+        trigger: viewport,
+        // no mobile o pin respira 84px do topo (espaço pro header que reaparece no scroll inverso)
+        start: function () { return window.innerWidth < 768 ? 'top 84px' : 'top top'; },
         end: function () { return '+=' + distance(); },
         scrub: 1, pin: true, anticipatePin: 1, invalidateOnRefresh: true,
         onUpdate: function (self) { gsap.set('#detProgress', { scaleX: self.progress }); }
