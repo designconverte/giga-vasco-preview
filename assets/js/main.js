@@ -194,7 +194,7 @@
           okZap.href = 'https://wa.me/' + WHATSAPP + '?text=' + encodeURIComponent(msg);
           okZap.hidden = false;
           if (okMsg) {
-            okMsg.innerHTML = 'Seu cadastro entrou na fila das 127 unidades. Toque no botão para abrir a conversa e receber as condições e o passo a passo para levar a sua. A rota já está traçada. <strong>CASACA!</strong>';
+            okMsg.innerHTML = 'Seu cadastro entrou na fila das 212 unidades. Toque no botão para abrir a conversa e receber as condições e o passo a passo para levar a sua. A rota já está traçada. <strong>CASACA!</strong>';
           }
         }
         ok.hidden = false;
