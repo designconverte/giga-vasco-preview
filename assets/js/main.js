@@ -144,9 +144,12 @@
     if (!f) return;
     var ok = document.getElementById('formOk');
     var errBox = document.getElementById('formErr');
-    /* PRODUÇÃO: apontar para o endpoint/CRM da MotoChefe.
-       Vazio = modo preview (não envia; grava localmente e mostra sucesso). */
+    /* PRODUÇÃO:
+       - data-whatsapp: número da automação (ex: 5521999998888). É o destino real do lead.
+       - data-endpoint: opcional, POST JSON para backend/Resend (aviso ao time interno).
+       Sem NENHUM dos dois configurados, o envio falha de propósito (nunca finge sucesso). */
     var ENDPOINT = f.getAttribute('data-endpoint') || '';
+    var WHATSAPP = (f.getAttribute('data-whatsapp') || '').replace(/\D/g, '');
     function setErr(input, errId, bad) {
       var err = document.getElementById(errId);
       if (err) err.hidden = !bad;
@@ -183,6 +186,17 @@
       function success() {
         f.hidden = true;
         if (errBox) errBox.hidden = true;
+        var okZap = document.getElementById('okZap');
+        var okMsg = document.getElementById('okMsg');
+        if (okZap && WHATSAPP) {
+          var msg = 'Olá! Quero saber como comprar a GIGA edição Vasco da Gama. Sou ' +
+            lead.nome + ', de ' + lead.cidade + '/' + lead.uf + '.';
+          okZap.href = 'https://wa.me/' + WHATSAPP + '?text=' + encodeURIComponent(msg);
+          okZap.hidden = false;
+          if (okMsg) {
+            okMsg.innerHTML = 'Seu cadastro entrou na fila das 127 unidades. Toque no botão para abrir a conversa e receber as condições e o passo a passo para levar a sua. A rota já está traçada. <strong>CASACA!</strong>';
+          }
+        }
         ok.hidden = false;
         if (window.gsap && !RM) {
           gsap.fromTo(ok, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' });
@@ -203,14 +217,57 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(lead)
         }).then(function (res) { res.ok ? success() : failure(); }).catch(failure);
+      } else if (WHATSAPP) {
+        // o WhatsApp com automação É o destino real do lead nesta operação
+        success();
       } else {
-        // SEM ENDPOINT CONFIGURADO: falha de propósito, alto e claro.
+        // NADA CONFIGURADO: falha de propósito, alto e claro.
         // Um preview que finge sucesso vai parar em produção sem ninguém notar.
-        console.warn('[GIGA] form: data-endpoint não configurado no <form id="form"> — o lead NÃO foi enviado. Ver README (pendência de integração).');
+        console.warn('[GIGA] form: nem data-whatsapp nem data-endpoint configurados no <form id="form">. O lead NÃO foi encaminhado. Ver README.');
         try { localStorage.setItem('giga-vasco-lead-nao-enviado', JSON.stringify(lead)); } catch (err) {}
         failure();
       }
     });
+  })();
+
+  /* ---------- CINEMA (filme completo, opcional) ---------- */
+  (function cinema() {
+    var trigger = document.getElementById('cineTrigger');
+    var modal = document.getElementById('cinema');
+    var vid = document.getElementById('cineVideo');
+    var btnClose = document.getElementById('cineClose');
+    if (!trigger || !modal || !vid) return;
+    var FILME = 'assets/video/giga-filme.mp4';
+    // o botão só aparece se o arquivo do filme existir no servidor
+    fetch(FILME, { method: 'HEAD' }).then(function (res) {
+      if (res.ok) trigger.hidden = false;
+    }).catch(function () {});
+    var lastFocus = null;
+    function open() {
+      lastFocus = document.activeElement;
+      modal.hidden = false;
+      document.body.style.overflow = 'hidden';
+      if (window.lenis) window.lenis.stop();
+      var hero = document.getElementById('heroVideo');
+      if (hero) hero.pause();
+      var p = vid.play(); if (p && p.catch) p.catch(function () {});
+      if (vid.requestFullscreen) { vid.requestFullscreen().catch(function () {}); }
+      else if (vid.webkitEnterFullscreen) { try { vid.webkitEnterFullscreen(); } catch (e) {} } // iOS
+      btnClose.focus();
+    }
+    function close() {
+      vid.pause();
+      if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(function () {});
+      modal.hidden = true;
+      document.body.style.overflow = '';
+      if (window.lenis) window.lenis.start();
+      if (lastFocus) lastFocus.focus();
+    }
+    trigger.addEventListener('click', open);
+    btnClose.addEventListener('click', close);
+    modal.addEventListener('click', function (e) { if (e.target === modal) close(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !modal.hidden) close(); });
+    // ao sair do fullscreen nativo, mantém o modal aberto (usuário decide fechar)
   })();
 
   /* ---------- BURGER / MENU MOBILE ---------- */
@@ -364,6 +421,14 @@
     function reveal() {
       if (revealed) return; revealed = true;
       if (video) { var p = video.play(); if (p && p.catch) p.catch(function () {}); }
+      // a faixa branca corre na diagonal exata da tela (canto sup. esquerdo -> inf. direito),
+      // como a faixa da camisa; depois as duas metades pretas se abrem ao longo dela
+      var vw = window.innerWidth, vh = window.innerHeight;
+      var ang = Math.atan2(vh, vw) * 180 / Math.PI;
+      var len = Math.hypot(vw, vh);
+      var ux = vh / len, uy = -vw / len; // perpendicular à diagonal
+      var d = len * 0.85;
+      gsap.set('#loaderFaixa', { rotation: ang });
       var tl = gsap.timeline({
         onComplete: function () {
           el.style.display = 'none';
@@ -371,10 +436,15 @@
           ScrollTrigger.refresh();
         }
       });
-      tl.to('.loader__inner', { opacity: 0, y: -30, duration: 0.45, ease: 'power2.in' })
-        .to(el, { clipPath: 'inset(0 0 100% 0)', duration: 0.9, ease: 'power4.inOut' }, '-=0.1')
+      tl.to('.loader__inner', { opacity: 0, y: -30, duration: 0.4, ease: 'power2.in' })
+        // 1. a faixa se desenha na diagonal
+        .to('#loaderFaixa', { scaleX: 1, duration: 0.55, ease: 'expo.inOut' }, '-=0.1')
+        // 2. as metades se abrem ao longo da faixa, revelando a página
+        .to('.loader__half--a', { x: ux * d, y: uy * d, duration: 0.9, ease: 'power4.inOut' }, '+=0.12')
+        .to('.loader__half--b', { x: -ux * d, y: -uy * d, duration: 0.9, ease: 'power4.inOut' }, '<')
+        .to('#loaderFaixa', { scaleY: 3.2, opacity: 0, duration: 0.7, ease: 'power3.in' }, '<0.15')
         // INTRO DO HERO
-        .fromTo('#heroMedia', { scale: 1.12 }, { scale: 1, duration: 1.6, ease: 'expo.out' }, '-=0.55')
+        .fromTo('#heroMedia', { scale: 1.12 }, { scale: 1, duration: 1.6, ease: 'expo.out' }, '-=0.65')
         .fromTo('.hero__line', { yPercent: 115 }, { yPercent: 0, duration: 1.1, stagger: 0.12, ease: 'power4.out' }, '-=1.35')
         .fromTo('#heroEyebrow', { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }, '-=0.7')
         .fromTo('#heroSub', { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out' }, '-=0.55')
@@ -382,7 +452,6 @@
         .fromTo('#heroActions', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }, '-=0.35')
         .fromTo('#scrollCue', { opacity: 0 }, { opacity: 1, duration: 0.6 }, '-=0.2');
     }
-    gsap.set(el, { clipPath: 'inset(0 0 0% 0)' });
   })();
 
   /* ---------- HERO SCRUB ---------- */
@@ -486,41 +555,31 @@
     var viewport = document.getElementById('detViewport');
     var track = document.getElementById('detTrack');
     if (!viewport || !track) return;
-    var mm = gsap.matchMedia();
-    mm.add('(min-width: 768px)', function () {
-      var distance = function () { return track.scrollWidth - window.innerWidth; };
-      var tween = gsap.to(track, {
-        x: function () { return -distance(); },
-        ease: 'none',
-        scrollTrigger: {
-          trigger: viewport, start: 'top top',
-          end: function () { return '+=' + distance(); },
-          scrub: 1, pin: true, anticipatePin: 1, invalidateOnRefresh: true,
-          onUpdate: function (self) { gsap.set('#detProgress', { scaleX: self.progress }); }
-        }
-      });
-      gsap.utils.toArray('.det__panel').forEach(function (panel) {
-        gsap.fromTo(panel.querySelector('.det__info'),
-          { opacity: 0, y: 40 },
-          {
-            opacity: 1, y: 0, duration: 0.6, ease: 'power3.out',
-            scrollTrigger: { trigger: panel, containerAnimation: tween, start: 'left 78%', toggleActions: 'play none none reverse' }
-          });
-        gsap.fromTo(panel.querySelector('.det__frame img'),
-          { xPercent: -6 },
-          {
-            xPercent: 6, ease: 'none',
-            scrollTrigger: { trigger: panel, containerAnimation: tween, start: 'left right', end: 'right left', scrub: true }
-          });
-      });
+    // scroll horizontal pinado em TODAS as larguras (mobile inclusive, a pedido do cliente)
+    var distance = function () { return track.scrollWidth - window.innerWidth; };
+    var tween = gsap.to(track, {
+      x: function () { return -distance(); },
+      ease: 'none',
+      scrollTrigger: {
+        trigger: viewport, start: 'top top',
+        end: function () { return '+=' + distance(); },
+        scrub: 1, pin: true, anticipatePin: 1, invalidateOnRefresh: true,
+        onUpdate: function (self) { gsap.set('#detProgress', { scaleX: self.progress }); }
+      }
     });
-    mm.add('(max-width: 767px)', function () {
-      gsap.utils.toArray('.det__panel').forEach(function (panel) {
-        gsap.fromTo(panel, { opacity: 0, y: 40 }, {
-          opacity: 1, y: 0, duration: 0.7, ease: 'power3.out',
-          scrollTrigger: { trigger: panel, start: 'top 85%', once: true }
+    gsap.utils.toArray('.det__panel').forEach(function (panel) {
+      gsap.fromTo(panel.querySelector('.det__info'),
+        { opacity: 0, y: 40 },
+        {
+          opacity: 1, y: 0, duration: 0.6, ease: 'power3.out',
+          scrollTrigger: { trigger: panel, containerAnimation: tween, start: 'left 82%', toggleActions: 'play none none reverse' }
         });
-      });
+      gsap.fromTo(panel.querySelector('.det__frame img'),
+        { xPercent: -6 },
+        {
+          xPercent: 6, ease: 'none',
+          scrollTrigger: { trigger: panel, containerAnimation: tween, start: 'left right', end: 'right left', scrub: true }
+        });
     });
   })();
 

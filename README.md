@@ -34,8 +34,13 @@ Cultura e guarda-rails: `docs/vasco-cultura-dossie.md` — **ler antes de editar
 2. Validar redação de licenciamento ("edição especial oficial") com o jurídico
 3. Aprovação do layout + lockup CRVG × MotoChefe pelo licenciante (obrigatório, Manual 2024)
 4. Confirmar cor/acabamento de série com a MotoChefe
-5. **Backend do formulário:** configurar `data-endpoint="https://..."` no `<form id="form">` (index.html). O JS envia POST JSON com o payload `lead`. **Sem endpoint configurado o envio FALHA de propósito** (mensagem de erro + `console.warn`) — nunca finge sucesso.
+5. **Destino do lead (formulário):** no `<form id="form">` (index.html), configurar:
+   - `data-whatsapp="5521XXXXXXXXX"` — número da automação de WhatsApp (destino REAL do lead: o sucesso mostra o botão "Continuar no WhatsApp" com mensagem pré-preenchida com nome/cidade);
+   - `data-endpoint="https://..."` — opcional, POST JSON (ex.: função com Resend para avisar o time interno).
+   Sem NENHUM dos dois, o envio falha de propósito (mensagem de erro + `console.warn`); nunca finge sucesso.
 6. **Domínio final:** trocar `https://giga-vasco.motochefebrasil.com.br` (placeholder marcado com comentário) em `canonical`, `og:url`, `og:image` e `twitter:image` no `<head>`.
+7. **Filme completo (opcional):** colocar o vídeo oficial comprimido em `assets/video/giga-filme.mp4`. O botão "Assistir ao filme da edição" (seção Prova Emocional) só aparece quando o arquivo existe (checagem HEAD no load; antes disso o console mostra um 404 esperado desse probe). Entregar o arquivo bruto de 148MB para compressão (~1080p, alvo 25–40MB) antes de subir.
+8. **Preview no GitHub Pages:** ao republicar o preview, reaplicar `noindex` e remover `canonical` na CÓPIA de deploy (ver comentário no HTML do deploy). Na Hostinger, NÃO aplicar noindex: a página final deve indexar.
 7. Especificações (autonomia, recarga, garantia): quando a MotoChefe liberar, a autonomia deve entrar no HERO (recomendação do copy deck).
 
 ## Rodar localmente
